@@ -8,6 +8,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unrealeased]
 
+### Fixed
+
+- Fix course teaser layout issues on Safari
+- Fix html landmarks for screen readers
+
 ### Added
 
 - Course code information on the course glimpse
