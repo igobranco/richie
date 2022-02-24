@@ -46,14 +46,31 @@ def perform_create_index(indexable, logger=None):
     # Create the new index
     if logger:
         logger.info(f'Creating a new Elasticsearch index "{new_index:s}"...')
-    ES_INDICES_CLIENT.create(index=new_index)
+    ES_INDICES_CLIENT.create(
+        index=new_index,
+        **getattr(settings, "RICHIE_ES_INDICES_CLIENT_CREATE_KWARGS", {}),
+    )
 
     # The index needs to be closed before we set an analyzer
-    ES_INDICES_CLIENT.close(index=new_index)
-    ES_INDICES_CLIENT.put_settings(body=ANALYSIS_SETTINGS, index=new_index)
-    ES_INDICES_CLIENT.open(index=new_index)
+    ES_INDICES_CLIENT.close(
+        index=new_index,
+        **getattr(settings, "RICHIE_ES_INDICES_CLIENT_CLOSE_KWARGS", {}),
+    )
+    ES_INDICES_CLIENT.put_settings(
+        body=ANALYSIS_SETTINGS,
+        index=new_index,
+        **getattr(settings, "RICHIE_ES_INDICES_CLIENT_PUT_SETTINGS_KWARGS", {}),
+    )
+    ES_INDICES_CLIENT.open(
+        index=new_index,
+        **getattr(settings, "RICHIE_ES_INDICES_CLIENT_OPEN_KWARGS", {}),
+    )
 
-    ES_INDICES_CLIENT.put_mapping(body=indexable.mapping, index=new_index)
+    ES_INDICES_CLIENT.put_mapping(
+        body=indexable.mapping,
+        index=new_index,
+        **getattr(settings, "RICHIE_ES_INDICES_CLIENT_PUT_MAPPING_KWARGS", {}),
+    )
 
     # Populate the new index with data provided from our indexable class
     richie_bulk(indexable.get_es_documents(new_index))
@@ -69,7 +86,10 @@ def regenerate_indices(logger):
     """
     # Get all existing indices once; we'll look up into this list many times
     try:
-        existing_indices = ES_INDICES_CLIENT.get_alias("*")
+        existing_indices = ES_INDICES_CLIENT.get_alias(
+            "*",
+            **getattr(settings, "RICHIE_ES_INDICES_CLIENT_GET_ALIAS_KWARGS", {}),
+        )
     except NotFoundError:
         # Provide a fallback empty list so we don't have to check for its existence later on
         existing_indices = []
@@ -114,7 +134,8 @@ def regenerate_indices(logger):
     def perform_aliases_update():
         try:
             ES_INDICES_CLIENT.update_aliases(
-                dict(actions=actions_to_create_aliases + actions_to_delete_aliases)
+                dict(actions=actions_to_create_aliases + actions_to_delete_aliases),
+                **getattr(settings, "RICHIE_ES_INDICES_CLIENT_UPDATE_ALIAS_KWARGS", {}),
             )
         except RequestError as exception:
             # This operation can fail if an index exists with the same name as an alias we're
@@ -131,7 +152,10 @@ def regenerate_indices(logger):
                         exception.info["error"]["reason"]
                     ).group(1)
                 # Delete it (it was unusable and we can recreate its data at-will)
-                ES_INDICES_CLIENT.delete(index=broken_index)
+                ES_INDICES_CLIENT.delete(
+                    index=broken_index,
+                    **getattr(settings, "RICHIE_ES_INDICES_CLIENT_DELETE_KWARGS", {}),
+                )
                 # Attempt to perform the operation again
                 # We're doing this recursively in case more than one such broken indices existed
                 # (eg. "richie_courses" and "richie_organizations")
@@ -148,7 +172,11 @@ def regenerate_indices(logger):
         # anti-pattern.
         #
         # pylint: disable=unexpected-keyword-arg
-        ES_INDICES_CLIENT.delete(index=useless_index, ignore=[400, 404])
+        ES_INDICES_CLIENT.delete(
+            index=useless_index,
+            ignore=[400, 404],
+            **getattr(settings, "RICHIE_ES_INDICES_CLIENT_DELETE_KWARGS", {}),
+        )
 
 
 def store_es_scripts(logger=None):

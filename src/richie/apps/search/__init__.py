@@ -10,7 +10,8 @@ from .elasticsearch import (
 default_app_config = "richie.apps.search.apps.SearchConfig"
 
 ES_CLIENT = ElasticsearchClientCompat7to6(
-    getattr(settings, "RICHIE_ES_HOST", ["elasticsearch"])
+    getattr(settings, "RICHIE_ES_HOST", ["elasticsearch"]),
+    **getattr(settings, "RICHIE_ES_CLIENT_KWARGS", {}),
 )
 
 ES_INDICES_CLIENT = ElasticsearchIndicesClientCompat7to6(ES_CLIENT)
