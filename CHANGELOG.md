@@ -19,6 +19,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- Move enroll button for the first open course run bellow the contact block.
+  If there are more than one open run, they're all still shown on course
+  detail aside block.
 - Update frontend overriding system to allow to override any frontend module.
 - Improve React search suggestion field labels for screen readers.
 - Removed usage of deprecated Sass division '/' operator in favor of
@@ -35,6 +38,8 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 - Fix section tile title with richtext and special character escaping.
 - Change blogpost detail template to display author even in published mode
   except if its placeholder is empty.
+- Hide title _To be scheduled_, _Upcoming_, _Ongoing_ and _Archived_ when all
+  course runs have catalog visibility `hidden`.
 
 ## [2.13.0] - 2022-02-18
 

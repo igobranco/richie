@@ -34,6 +34,14 @@
 
   &__empty {
     @include detail-empty;
+    margin-top: 2rem;
+  }
+
+  &__runs {
+    &--open {
+      margin-top: 2rem;
+      text-align: left;
+    }
   }
 
   &__grid {
@@ -304,5 +312,15 @@
     &:hover {
       text-decoration: underline;
     }
+  }
+
+  &__go-to-open-runs {
+    @include button-base($font-weight: bold);
+    @include r-button-colors(
+      r-theme-val(subheader, cta),
+      $apply-border: true,
+      $include-hover: true
+    );
+    margin-top: 2rem;
   }
 }
