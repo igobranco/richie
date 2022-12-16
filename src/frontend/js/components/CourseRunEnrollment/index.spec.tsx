@@ -48,6 +48,7 @@ describe('<CourseRunEnrollment />', () => {
   });
 
   afterEach(() => {
+    jest.clearAllMocks();
     fetchMock.restore();
   });
 
@@ -138,6 +139,55 @@ describe('<CourseRunEnrollment />', () => {
     screen.getByText('Your enrollment request failed.');
     expect(mockHandle).toHaveBeenCalledWith(
       new Error('[SET - Enrollment] > 500 - Internal Server Error'),
+    );
+  });
+
+  it('shows a localized error message and the enrollment button when the enrollment fails with a 400 http status', async () => {
+    const user: User = UserFactory.generate();
+    const courseRun: CourseRun = mockFactories.CourseRunFactory.generate();
+    courseRun.state.priority = 0;
+
+    const enrollmentDeferred = new Deferred();
+    fetchMock.get(
+      `${endpoint}/api/enrollment/v1/enrollment/${user.username},${courseRun.resource_link}`,
+      enrollmentDeferred.promise,
+    );
+
+    await act(async () => {
+      render(
+        <QueryClientProvider client={createTestQueryClient({ user })}>
+          <IntlProvider locale="en">
+            <SessionProvider>
+              <CourseRunEnrollment context={context} courseRun={getCourseRunProp(courseRun)} />
+            </SessionProvider>
+          </IntlProvider>
+        </QueryClientProvider>,
+      );
+    });
+
+    screen.getByRole('status', { name: 'Loading enrollment information...' });
+
+    await act(async () => {
+      enrollmentDeferred.resolve({});
+    });
+
+    const button = await screen.findByRole('button', { name: 'Enroll now' });
+
+    // const enrollmentAction = new Deferred();
+    fetchMock.post(`${endpoint}/api/enrollment/v1/enrollment`, {
+      status: 400,
+      body: "{message: 'A localized error message.'}",
+    });
+
+    await act(async () => {
+      expect(() => fireEvent.click(button)).not.toThrow();
+      // enrollmentAction.reject('500 - Internal Server Error');
+    });
+
+    screen.getByRole('button', { name: 'Enroll now' });
+    screen.getByText('Your enrollment request failed.');
+    expect(mockHandle).toHaveBeenCalledWith(
+      new Error('[SET - Enrollment] > 400 - Bad Request - A localized error message.'),
     );
   });
 

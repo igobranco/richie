@@ -9,6 +9,7 @@ import { Maybe, Nullable } from 'types/utils';
 import { handle } from 'utils/errors/handle';
 import { CommonDataProps } from 'types/commonDataProps';
 import useCourseEnrollment from 'data/useCourseEnrollment';
+import { LocalizedHttpError } from 'utils/errors/LocalizedHttpError';
 
 const messages = defineMessages({
   enroll: {
@@ -220,7 +221,15 @@ const CourseRunEnrollment: React.FC<CourseRunEnrollmentProps & CommonDataProps> 
           </button>
           {step === Step.ENROLLMENT_FAILED ? (
             <div className="course-run-enrollment__errortext">
-              <FormattedMessage {...messages.enrollmentFailed} />
+              {error instanceof LocalizedHttpError ? (
+                <FormattedMessage {...messages.enrollmentFailed}
+                  values={{
+                    detail: error instanceof LocalizedHttpError ? error.message : "",
+                  }} />
+                ) : (
+                  <FormattedMessage {...messages.enrollmentFailed} />
+                )
+              }
             </div>
           ) : null}
         </React.Fragment>

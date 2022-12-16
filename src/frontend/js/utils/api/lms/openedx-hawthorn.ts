@@ -9,6 +9,7 @@ import { handle } from 'utils/errors/handle';
 import { EDX_CSRF_TOKEN_COOKIE_NAME } from 'settings';
 import { Enrollment, OpenEdXEnrollment } from 'types';
 import { HttpError } from 'utils/errors/HttpError';
+import { LocalizedHttpError } from 'utils/errors/LocalizedHttpError';
 
 /**
  *
@@ -118,6 +119,13 @@ const API = (APIConf: AuthenticationBackend | LMSBackend, options?: APIOptions):
             if (response.status >= 500) {
               // Send server errors to sentry
               handle(new Error(`[SET - Enrollment] > ${response.status} - ${response.statusText}`));
+            } else if (response.status >= 400) {
+              //const resolveMessage = async (response: Response) => response.json().then(data => data.message);
+              //const message = resolveMessage(response)
+              const message : any = response.json().then(data => { return data.message });
+              console.log(message);
+              handle(new Error(`[SET - Enrollment] > ${response.status} - ${response.statusText} - ${message}`));
+              throw new LocalizedHttpError(response.status, response.statusText, message);
             }
             throw new HttpError(response.status, response.statusText);
           })
