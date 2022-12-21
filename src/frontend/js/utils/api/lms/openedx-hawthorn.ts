@@ -114,22 +114,23 @@ const API = (APIConf: AuthenticationBackend | LMSBackend, options?: APIOptions):
             },
           }),
         })
-          .then((response) => {
-            if (response.ok) return response.json();
+          .then(async (response) => {
+            if (response.ok) {
+              const {is_active} = await response.json();
+              return is_active;
+            } 
             if (response.status >= 500) {
               // Send server errors to sentry
               handle(new Error(`[SET - Enrollment] > ${response.status} - ${response.statusText}`));
             } else if (response.status >= 400) {
               //const resolveMessage = async (response: Response) => response.json().then(data => data.message);
               //const message = resolveMessage(response)
-              const message : any = response.json().then(data => { return data.message });
-              console.log(message);
-              handle(new Error(`[SET - Enrollment] > ${response.status} - ${response.statusText} - ${message}`));
-              throw new LocalizedHttpError(response.status, response.statusText, message);
+              const {message} = await response.json();
+              return message;
             }
             throw new HttpError(response.status, response.statusText);
-          })
-          .then(({ is_active }) => is_active);
+          });
+          //.then(({ is_active }) => is_active);
 
         return isEnrolled;
       },

@@ -142,7 +142,7 @@ describe('<CourseRunEnrollment />', () => {
     );
   });
 
-  it('shows a localized error message and the enrollment button when the enrollment fails with a 400 http status', async () => {
+  it.only('shows a localized error message and the enrollment button when the enrollment fails with a 400 http status', async () => {
     const user: User = UserFactory.generate();
     const courseRun: CourseRun = mockFactories.CourseRunFactory.generate();
     courseRun.state.priority = 0;
@@ -176,7 +176,11 @@ describe('<CourseRunEnrollment />', () => {
     // const enrollmentAction = new Deferred();
     fetchMock.post(`${endpoint}/api/enrollment/v1/enrollment`, {
       status: 400,
-      body: "{message: 'A localized error message.'}",
+      response: {
+        result: {
+          message: 'A localized error message.',
+        }
+      },
     });
 
     await act(async () => {
@@ -186,9 +190,10 @@ describe('<CourseRunEnrollment />', () => {
 
     screen.getByRole('button', { name: 'Enroll now' });
     screen.getByText('Your enrollment request failed.');
-    expect(mockHandle).toHaveBeenCalledWith(
-      new Error('[SET - Enrollment] > 400 - Bad Request - A localized error message.'),
-    );
+    screen.getByText('A localized error message');
+    // expect(mockHandle).toHaveBeenCalledWith(
+    //   new Error('[SET - Enrollment] > 400 - Bad Request - A localized error message.'),
+    // );
   });
 
   it('shows a link to the course if the user is already enrolled', async () => {

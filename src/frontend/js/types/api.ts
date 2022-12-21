@@ -3,6 +3,7 @@ import { FacetedFilterDefinition } from 'types/filters';
 import { Maybe, Nullable } from 'types/utils';
 import { User } from 'types/User';
 import { Enrollment } from 'types';
+import { LocalizedHttpError } from 'utils/errors/LocalizedHttpError';
 
 export enum RequestStatus {
   FAILURE = 'failure',
@@ -48,7 +49,7 @@ export interface APIAuthentication {
 export interface APIEnrollment {
   get(url: string, user: Nullable<User>): Promise<Nullable<Enrollment>>;
   isEnrolled(enrollment: Maybe<Nullable<Enrollment>>): Promise<Maybe<boolean>>;
-  set(url: string, user: User): Promise<boolean>;
+  set(url: string, user: User): Promise<boolean | string>;
 }
 
 export interface APILms {

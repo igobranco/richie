@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useReducer } from 'react';
+import React, { useCallback, useEffect, useReducer, useState } from 'react';
 import { defineMessages, FormattedMessage } from 'react-intl';
 
 import { Spinner } from 'components/Spinner';
@@ -10,6 +10,7 @@ import { handle } from 'utils/errors/handle';
 import { CommonDataProps } from 'types/commonDataProps';
 import useCourseEnrollment from 'data/useCourseEnrollment';
 import { LocalizedHttpError } from 'utils/errors/LocalizedHttpError';
+import { bool } from 'yup';
 
 const messages = defineMessages({
   enroll: {
@@ -33,6 +34,12 @@ const messages = defineMessages({
     description:
       'Help text below the "Enroll now" CTA when an enrollment attempt has already failed.',
     id: 'components.CourseRunEnrollment.enrollmentFailed',
+  },
+  enrollmentFailedWithMessage: {
+    defaultMessage: 'Your enrollment request failed, additional message: {detail}',
+    description:
+      'Help text below the "Enroll now" CTA when an enrollment attempt has already failed with message.',
+    id: 'components.CourseRunEnrollment.enrollmentFailedWithMessage',
   },
   goToCourse: {
     defaultMessage: 'Go to course',
@@ -81,7 +88,7 @@ enum ActionType {
 interface ReducerState {
   step: Step;
   context: {
-    isEnrolled: Maybe<Nullable<Boolean>>;
+    isEnrolled: Maybe<Nullable<Boolean|String>>;
     courseRun: CourseRunEnrollmentProps['courseRun'];
     currentUser: Maybe<Nullable<User>>;
   };
@@ -96,18 +103,19 @@ const getStepFromContext = (
   { currentUser, courseRun, isEnrolled }: ReducerState['context'],
   previousStep?: Maybe<Step>,
 ) => {
+  const isEnrolledBool = isEnrolled instanceof String ? false : isEnrolled;
   switch (true) {
     case courseRun.priority > Priority.ARCHIVED_OPEN:
       return Step.CLOSED;
-    case previousStep === Step.ENROLLING && !isEnrolled:
+    case previousStep === Step.ENROLLING && !isEnrolledBool:
       return Step.ENROLLMENT_FAILED;
     case currentUser === null:
       return Step.ANONYMOUS;
-    case currentUser === undefined || courseRun === undefined || isEnrolled === undefined:
+    case currentUser === undefined || courseRun === undefined || isEnrolledBool === undefined:
       return Step.LOADING;
-    case !!isEnrolled:
+    case !!isEnrolledBool:
       return Step.ENROLLED;
-    case !isEnrolled:
+    case !isEnrolledBool:
       return Step.IDLE;
     default:
       throw new Error('Impossible state');
@@ -117,7 +125,7 @@ const getStepFromContext = (
 const initialState = (
   currentUser: Maybe<Nullable<User>>,
   courseRun: CourseRunEnrollmentProps['courseRun'],
-  isEnrolled: Maybe<boolean>,
+  isEnrolled: Maybe<boolean|string>,
 ) => ({
   step: getStepFromContext({ currentUser, courseRun, isEnrolled }),
   context: {
@@ -145,6 +153,7 @@ const reducer = ({ step, context }: ReducerState, action: ReducerAction): Reduce
 const CourseRunEnrollment: React.FC<CourseRunEnrollmentProps & CommonDataProps> = (props) => {
   const { user, login } = useSession();
   const { enrollmentIsActive, setEnrollment } = useCourseEnrollment(props.courseRun.resource_link);
+  const [tmpIsEnrolled, setTmpIsEnrolled] = useState<string|boolean|undefined>(undefined);
 
   const [
     {
@@ -158,18 +167,20 @@ const CourseRunEnrollment: React.FC<CourseRunEnrollmentProps & CommonDataProps> 
     initialState(user, props.courseRun, enrollmentIsActive),
     (s) => s,
   );
-
+  let teste123;
   const enroll = useCallback(async () => {
     dispatch({ type: ActionType.ENROLL });
     if (courseRun && currentUser) {
       const isEnrolled = await setEnrollment().catch(() => undefined);
-
+      console.debug(isEnrolled);
+      setTmpIsEnrolled(isEnrolled);
+      teste123 = isEnrolled;
       dispatch({
         type: ActionType.UPDATE_CONTEXT,
         payload: { isEnrolled },
       });
     }
-  }, [courseRun, currentUser, dispatch]);
+  }, [courseRun, currentUser, dispatch, setTmpIsEnrolled]);
 
   useEffect(() => {
     dispatch({
@@ -221,10 +232,11 @@ const CourseRunEnrollment: React.FC<CourseRunEnrollmentProps & CommonDataProps> 
           </button>
           {step === Step.ENROLLMENT_FAILED ? (
             <div className="course-run-enrollment__errortext">
-              {error instanceof LocalizedHttpError ? (
+              <h1>aaa {teste123}</h1>
+              {typeof tmpIsEnrolled === "string" ? (
                 <FormattedMessage {...messages.enrollmentFailed}
                   values={{
-                    detail: error instanceof LocalizedHttpError ? error.message : "",
+                    detail: tmpIsEnrolled,
                   }} />
                 ) : (
                   <FormattedMessage {...messages.enrollmentFailed} />
