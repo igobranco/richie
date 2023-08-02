@@ -1,7 +1,13 @@
-{% load i18n cms_tags %}
+{% load i18n cms_tags extra_tags thumbnail %}
 {% comment %}
 This is a copy of original template from plugin just to clean <iframe> from
 obsolete attribute "frameborder" and invalid "allowfullscreen" attribute value.
+
+For performance reasons instead of loading the video iframe directly, 
+it changes the default template with an iframe "srcdoc" that adds the
+video poster or the course cover with a big play icon '▶'.
+Only after the user clicks on the play icon '▶', the browser loads the external
+video player iframe.
 {% endcomment %}
 
 {% if instance.embed_link %}
@@ -9,6 +15,33 @@ obsolete attribute "frameborder" and invalid "allowfullscreen" attribute value.
     <div class="aspect-ratio">
         <iframe
             title="{% if instance.label %}{{ instance.label }}{% else %}{% trans "Video" %}{% endif %}"
+            srcdoc="<style>*{padding:0;margin:0;overflow:hidden}html,body{height:100%}img,span{position:absolute;width:100%;top:0;bottom:0;margin:auto}span{height:1.5em;text-align:center;font:48px/1.5 sans-serif;color:white;text-shadow:0 0 0.5em black}</style>
+                <a href='{{ instance.embed_link_with_parameters }}{% if '?' not in instance.embed_link_with_parameters %}?{% endif %}&autoplay=1'>
+                    {% if instance.poster %}
+                        <img
+                            src='{{ instance.poster.url }}'
+                            {# alt forced to empty string for a11y because the image does not carry more information than the course title #}
+                            alt='' />
+                    {% else %}
+                        {% if not request.toolbar.edit_mode_active %}
+                            {% placeholder_as_plugins "course_cover" as cover_plugins %}
+                            {% blockplugin cover_plugins.0 %}
+                                <img
+                                    src='{% thumbnail instance.picture 300x170 replace_alpha='#FFFFFF' crop upscale subject_location=instance.picture.subject_location %}'
+                                    srcset='
+                                    {% thumbnail instance.picture 300x170 replace_alpha='#FFFFFF' crop upscale subject_location=instance.picture.subject_location %} 300w
+                                    {% if instance.picture.width >= 600 %},{% thumbnail instance.picture 600x340 replace_alpha='#FFFFFF' crop upscale subject_location=instance.picture.subject_location %} 600w{% endif %}
+                                    {% if instance.picture.width >= 900 %},{% thumbnail instance.picture 900x510 replace_alpha='#FFFFFF' crop upscale subject_location=instance.picture.subject_location %} 900w{% endif %}
+                                    '
+                                    sizes='300px'
+                                    alt='{% if instance.picture.default_alt_text %}{{ instance.picture.default_alt_text }}{% else %}{% trans 'course cover image' %}{% endif %}'
+                                />
+                            {% endblockplugin %}
+                        {% endif %}
+                    {% endif %}
+                    <span>▶</span>
+                </a>
+            "
             src="{{ instance.embed_link_with_parameters }}"
             {{ instance.attributes_str }}
             allowfullscreen
