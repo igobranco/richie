@@ -8,6 +8,11 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unrealeased]
 
+### Added
+
+- On self-paced courses with single run display a simplified
+  version of the syllabus.
+
 ## [2.28.0]
 
 ### Changed
@@ -66,7 +71,6 @@ Versioning](https://semver.org/spec/v2.0.0.html).
   Equipment.
 - Ongoing product displayed on the syllabus without active enrollment
   now link to the order details page in the learner dashboard.
-- Add new sale tunnel
 
 ### Changed
 

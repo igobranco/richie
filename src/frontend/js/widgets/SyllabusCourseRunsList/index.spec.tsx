@@ -131,6 +131,90 @@ describe('<SyllabusCourseRunsList/>', () => {
     });
   };
 
+  const expectCourseRunOpenedLanguageCompacted = (container: HTMLElement, courseRun: CourseRun) => {
+    [courseRun] = computeStates([courseRun]);
+    const intl = createIntl({ locale: 'en' });
+    const heading = getByRole(container, 'heading', {
+      name: courseRun.title,
+    });
+    const runContainer = heading.parentNode! as HTMLElement;
+
+    const enrollmentNode = getByText(runContainer, 'Enrollment');
+
+    const enrollmentDatesContainer = enrollmentNode.nextSibling!;
+    const enrollmentStart = intl.formatDate(
+      new Date(courseRun.enrollment_start),
+      DEFAULT_DATE_FORMAT,
+    );
+    const enrollmentEnd = intl.formatDate(new Date(courseRun.enrollment_end), DEFAULT_DATE_FORMAT);
+    expect(enrollmentDatesContainer.textContent).toEqual(
+      `From ${enrollmentStart} to ${enrollmentEnd}`,
+    );
+
+    const courseNode = enrollmentDatesContainer.nextSibling!;
+    expect(courseNode.textContent).toEqual('Course');
+
+    const start = intl.formatDate(new Date(courseRun.start), DEFAULT_DATE_FORMAT);
+    const end = intl.formatDate(new Date(courseRun.end), DEFAULT_DATE_FORMAT);
+
+    const datesContainer = courseNode.nextSibling!;
+    expect(datesContainer.textContent).toEqual(`From ${start} to ${end}`);
+
+    expect(datesContainer.nextSibling).toBeNull();
+    getByRole(runContainer, 'link', {
+      name: StringHelper.capitalizeFirst(courseRun.state.call_to_action)!,
+    });
+  };
+
+  const expectSelfPacedCourseRunOpened = (container: HTMLElement, courseRun: CourseRun) => {
+    [courseRun] = computeStates([courseRun]);
+    const intl = createIntl({ locale: 'en' });
+    const heading = getByRole(container, 'heading', {
+      name: courseRun.title,
+    });
+    const runContainer = heading.parentNode! as HTMLElement;
+
+    const enrollmentNode = getByText(runContainer, 'Enrollment');
+
+    const enrollmentDatesContainer = enrollmentNode.nextSibling!;
+    const enrollmentEnd = intl.formatDate(new Date(courseRun.enrollment_end), DEFAULT_DATE_FORMAT);
+    expect(enrollmentDatesContainer.textContent).toEqual(`Available until ${enrollmentEnd}`);
+
+    const languagesNode = enrollmentDatesContainer.nextSibling!;
+    expect(languagesNode.textContent).toEqual('Languages');
+
+    const languagesContainer = languagesNode.nextSibling! as HTMLElement;
+    getByText(languagesContainer, IntlHelper.getLocalizedLanguages(courseRun.languages, intl));
+
+    expect(languagesContainer.nextSibling).toBeNull();
+    getByRole(runContainer, 'link', {
+      name: StringHelper.capitalizeFirst(courseRun.state.call_to_action)!,
+    });
+  };
+
+  const expectSelfPacedCourseRunLanguageCompacted = (
+    container: HTMLElement,
+    courseRun: CourseRun,
+  ) => {
+    [courseRun] = computeStates([courseRun]);
+    const intl = createIntl({ locale: 'en' });
+    const heading = getByRole(container, 'heading', {
+      name: courseRun.title,
+    });
+    const runContainer = heading.parentNode! as HTMLElement;
+
+    const enrollmentEnd = intl.formatDate(new Date(courseRun.enrollment_end), DEFAULT_DATE_FORMAT);
+
+    const enrollmentDatesContainer = getByText(runContainer, `Available until ${enrollmentEnd}`);
+
+    expect(enrollmentDatesContainer).not.toBeNull();
+
+    expect(enrollmentDatesContainer.nextSibling).toBeNull();
+    getByRole(runContainer, 'link', {
+      name: StringHelper.capitalizeFirst(courseRun.state.call_to_action)!,
+    });
+  };
+
   const expectCourseProduct = async (container: HTMLElement, relation: CourseProductRelation) => {
     const heading = await findByRole(container, 'heading', {
       name: relation.product.title,
@@ -612,6 +696,128 @@ describe('<SyllabusCourseRunsList/>', () => {
     expectCourseRunOpened(elements[2], courseRuns[0]);
     expectCourseRunOpened(elements[3], courseRuns[2]);
     expectCourseRunOpened(elements[4], courseRuns[4]);
+  });
+
+  it('renders onpened run with same languages', async () => {
+    const course = CourseLightFactory().one();
+
+    const courseRuns: CourseRun[] = [
+      CourseRunFactoryFromPriority(Priority.ONGOING_OPEN)({
+        languages: ['en'],
+      }).one(),
+      CourseRunFactoryFromPriority(Priority.ARCHIVED_CLOSED)({
+        languages: ['en'],
+      }).one(),
+      CourseRunFactoryFromPriority(Priority.ARCHIVED_CLOSED)({
+        languages: ['en'],
+      }).one(),
+    ];
+
+    render(
+      <SyllabusCourseRunsList
+        courseRuns={courseRuns}
+        course={course}
+        maxArchivedCourseRuns={MAX_ARCHIVED_COURSE_RUNS}
+      />,
+      {
+        queryOptions: { client: createTestQueryClient({ user: null }) },
+      },
+    );
+
+    // Header of the opened run.
+    expect(getHeaderContainer().querySelectorAll('.course-detail__run-descriptions').length).toBe(
+      1,
+    );
+
+    // Assert that the run does not display the containers related to languages.
+    expectCourseRunOpenedLanguageCompacted(getHeaderContainer(), courseRuns[0]);
+
+    // Portal.
+    const portalContainer = getPortalContainer();
+
+    // Expect that all closed course runs to be present.
+    courseRuns.slice(1).forEach((run) => expectCourseRunInList(portalContainer, run));
+  });
+
+  it('renders self-paced onpened run', async () => {
+    const course = CourseLightFactory({ is_self_paced: true }).one();
+
+    const courseRuns = [
+      CourseRunFactoryFromPriority(Priority.ONGOING_OPEN)({
+        languages: ['it'],
+      }).one(),
+      CourseRunFactoryFromPriority(Priority.ARCHIVED_CLOSED)({
+        languages: ['en'],
+      }).one(),
+      CourseRunFactoryFromPriority(Priority.ARCHIVED_CLOSED)({
+        languages: ['fr'],
+      }).one(),
+    ];
+
+    render(
+      <SyllabusCourseRunsList
+        courseRuns={courseRuns}
+        course={course}
+        maxArchivedCourseRuns={MAX_ARCHIVED_COURSE_RUNS}
+      />,
+      {
+        queryOptions: { client: createTestQueryClient({ user: null }) },
+      },
+    );
+
+    // Header of the opened run.
+    expect(getHeaderContainer().querySelectorAll('.course-detail__run-descriptions').length).toBe(
+      1,
+    );
+    // Assert that the opened run has the self-paced description.
+    expectSelfPacedCourseRunOpened(getHeaderContainer(), courseRuns[0]);
+
+    // Portal.
+    const portalContainer = getPortalContainer();
+
+    // Expect that all closed course runs to be present.
+    courseRuns.slice(1).forEach((run) => expectCourseRunInList(portalContainer, run));
+  });
+
+  it('renders self-paced onpened run with same languages', async () => {
+    const course = CourseLightFactory({ is_self_paced: true }).one();
+
+    const courseRuns: CourseRun[] = [
+      CourseRunFactoryFromPriority(Priority.ONGOING_OPEN)({
+        languages: ['en'],
+      }).one(),
+      CourseRunFactoryFromPriority(Priority.ARCHIVED_CLOSED)({
+        languages: ['en'],
+      }).one(),
+      CourseRunFactoryFromPriority(Priority.ARCHIVED_CLOSED)({
+        languages: ['en'],
+      }).one(),
+    ];
+
+    render(
+      <SyllabusCourseRunsList
+        courseRuns={courseRuns}
+        course={course}
+        maxArchivedCourseRuns={MAX_ARCHIVED_COURSE_RUNS}
+      />,
+      {
+        queryOptions: { client: createTestQueryClient({ user: null }) },
+      },
+    );
+
+    // Header of the opened run.
+    expect(getHeaderContainer().querySelectorAll('.course-detail__run-descriptions').length).toBe(
+      1,
+    );
+
+    // Assert that the opened run does not display the containers related to languages and has the self-paced description.
+    expectSelfPacedCourseRunLanguageCompacted(getHeaderContainer(), courseRuns[0]);
+
+    // Portal.
+    const portalContainer = getPortalContainer();
+
+    // Expect that all closed course runs to be present.
+    courseRuns.slice(1).forEach((run) => expectCourseRunInList(portalContainer, run));
   });
 
   it('renders course runs with snapshot link if needed', async () => {

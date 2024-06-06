@@ -4,7 +4,9 @@ import { createPortal } from 'react-dom';
 import { Button, CunninghamProvider } from '@openfun/cunningham-react';
 import { CourseRun, Priority } from 'types';
 import { computeStates } from 'utils/CourseRuns';
+import { IsAllCourseRunsWithSameLanguages } from 'utils/CourseRunLanguages';
 import { SyllabusAsideList } from 'widgets/SyllabusCourseRunsList/components/SyllabusAsideList';
+import { SyllabusCourseRunCompacted } from 'widgets/SyllabusCourseRunsList/components/SyllabusCourseRunCompacted';
 import { SyllabusCourseRun } from 'widgets/SyllabusCourseRunsList/components/SyllabusCourseRun';
 import { DjangoCMSPluginsInit } from 'components/DjangoCMSTemplate';
 import { isJoanieEnabled } from 'api/joanie';
@@ -60,6 +62,8 @@ const SyllabusCourseRunsList = ({
     );
   }, [courseRunsComputed]);
 
+  const runsWithSameLanguages = IsAllCourseRunsWithSameLanguages(courseRuns);
+
   const choose = (e: React.MouseEvent) => {
     e.preventDefault();
     document
@@ -81,11 +85,24 @@ const SyllabusCourseRunsList = ({
           </div>
         </div>
       )}
-      {openedRuns.length === 1 && (
-        <div className="course-detail__row course-detail__runs course-detail__runs--open">
-          <SyllabusCourseRun courseRun={openedRuns[0]} course={course} />
-        </div>
-      )}
+      {openedRuns.length === 1 &&
+        (course.is_self_paced ? (
+          <div className="course-detail__row course-detail__runs course-detail__runs--open">
+            <SyllabusCourseRunCompacted
+              courseRun={openedRuns[0]}
+              course={course}
+              showLanguages={runsWithSameLanguages}
+            />
+          </div>
+        ) : (
+          <div className="course-detail__row course-detail__runs course-detail__runs--open">
+            <SyllabusCourseRun
+              courseRun={openedRuns[0]}
+              course={course}
+              showLanguages={runsWithSameLanguages}
+            />
+          </div>
+        ))}
       {openedRuns.length > 1 && (
         <div className="course-detail__row course-detail__runs course-detail__go-to-open-runs">
           <p>
