@@ -131,7 +131,43 @@ describe('<SyllabusCourseRunsList/>', () => {
     });
   };
 
-  const expectCourseRunOpenedLanguageCompacted = (container: HTMLElement, courseRun: CourseRun) => {
+  // const expectCourseRunOpenedNoLanguageDisplay = (container: HTMLElement, courseRun: CourseRun) => {
+  //   [courseRun] = computeStates([courseRun]);
+  //   const intl = createIntl({ locale: 'en' });
+  //   const heading = getByRole(container, 'heading', {
+  //     name: courseRun.title,
+  //   });
+  //   const runContainer = heading.parentNode! as HTMLElement;
+
+  //   const enrollmentNode = getByText(runContainer, 'Enrollment');
+
+  //   const enrollmentDatesContainer = enrollmentNode.nextSibling!;
+  //   const enrollmentStart = intl.formatDate(
+  //     new Date(courseRun.enrollment_start),
+  //     DEFAULT_DATE_FORMAT,
+  //   );
+  //   const enrollmentEnd = intl.formatDate(new Date(courseRun.enrollment_end), DEFAULT_DATE_FORMAT);
+  //   expect(enrollmentDatesContainer.textContent).toEqual(
+  //     `From ${enrollmentStart} to ${enrollmentEnd}`,
+  //   );
+
+  //   const courseNode = enrollmentDatesContainer.nextSibling!;
+  //   expect(courseNode.textContent).toEqual('Course');
+
+  //   const start = intl.formatDate(new Date(courseRun.start), DEFAULT_DATE_FORMAT);
+  //   const end = intl.formatDate(new Date(courseRun.end), DEFAULT_DATE_FORMAT);
+
+  //   const datesContainer = courseNode.nextSibling!;
+  //   expect(datesContainer.textContent).toEqual(`From ${start} to ${end}`);
+
+  //   const languagesNode = datesContainer.nextSibling;
+  //   expect(languagesNode).toBeNull();
+  //   getByRole(runContainer, 'link', {
+  //     name: StringHelper.capitalizeFirst(courseRun.state.call_to_action)!,
+  //   });
+  // };
+
+  const expectFullDates = (container: HTMLElement, courseRun: CourseRun) => {
     [courseRun] = computeStates([courseRun]);
     const intl = createIntl({ locale: 'en' });
     const heading = getByRole(container, 'heading', {
@@ -160,7 +196,49 @@ describe('<SyllabusCourseRunsList/>', () => {
     const datesContainer = courseNode.nextSibling!;
     expect(datesContainer.textContent).toEqual(`From ${start} to ${end}`);
 
-    expect(datesContainer.nextSibling).toBeNull();
+    getByRole(runContainer, 'link', {
+      name: StringHelper.capitalizeFirst(courseRun.state.call_to_action)!,
+    });
+  };
+
+  const expectCompactedDates = (container: HTMLElement, courseRun: CourseRun) => {
+    [courseRun] = computeStates([courseRun]);
+    const intl = createIntl({ locale: 'en' });
+    const heading = getByRole(container, 'heading', {
+      name: courseRun.title,
+    });
+    const runContainer = heading.parentNode! as HTMLElement;
+
+    const courseNode = getByText(runContainer, 'Course');
+
+    const enrollmentDatesContainer = courseNode.nextSibling!;
+    const end = intl.formatDate(new Date(courseRun.end), DEFAULT_DATE_FORMAT);
+    expect(enrollmentDatesContainer.textContent).toEqual(`Available until ${end}`);
+
+    const languagesNode = enrollmentDatesContainer.nextSibling!;
+    expect(languagesNode.textContent).toEqual('Languages');
+
+    const languagesContainer = languagesNode.nextSibling! as HTMLElement;
+    getByText(languagesContainer, IntlHelper.getLocalizedLanguages(courseRun.languages, intl));
+
+    expect(languagesContainer.nextSibling).toBeNull();
+    getByRole(runContainer, 'link', {
+      name: StringHelper.capitalizeFirst(courseRun.state.call_to_action)!,
+    });
+  };
+
+  const expectNoLanguageDisplay = (container: HTMLElement, courseRun: CourseRun) => {
+    [courseRun] = computeStates([courseRun]);
+    const heading = getByRole(container, 'heading', {
+      name: courseRun.title,
+    });
+    const runContainer = heading.parentNode! as HTMLElement;
+    const enrollmentNode = getByText(runContainer, 'Enrollment');
+    const enrollmentDatesContainer = enrollmentNode.nextSibling!;
+    const courseNode = enrollmentDatesContainer.nextSibling!;
+    const datesContainer = courseNode.nextSibling!;
+    const languagesNode = datesContainer.nextSibling;
+    expect(languagesNode).toBeNull();
     getByRole(runContainer, 'link', {
       name: StringHelper.capitalizeFirst(courseRun.state.call_to_action)!,
     });
@@ -698,7 +776,7 @@ describe('<SyllabusCourseRunsList/>', () => {
     expectCourseRunOpened(elements[4], courseRuns[4]);
   });
 
-  it('renders onpened run with same languages', async () => {
+  it('renders opened run with same languages', async () => {
     const course = CourseLightFactory().one();
 
     const courseRuns: CourseRun[] = [
@@ -730,7 +808,8 @@ describe('<SyllabusCourseRunsList/>', () => {
     );
 
     // Assert that the run does not display the containers related to languages.
-    expectCourseRunOpenedLanguageCompacted(getHeaderContainer(), courseRuns[0]);
+    expectCourseRunOpenedNoLanguageDisplay(getHeaderContainer(), courseRuns[0]);
+    expectNoLanguageDisplay(getHeaderContainer(), courseRuns[0]);
 
     // Portal.
     const portalContainer = getPortalContainer();

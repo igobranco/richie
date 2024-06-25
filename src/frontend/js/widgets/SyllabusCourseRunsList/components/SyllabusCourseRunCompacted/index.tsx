@@ -37,7 +37,7 @@ const OpenedSelfPacedCourseRun = ({
 }) => {
   const formatDate = useDateFormat();
   const intl = useIntl();
-  const enrollmentEnd = courseRun.enrollment_end ? formatDate(courseRun.enrollment_end) : '...';
+  const course_end = courseRun.end ? formatDate(courseRun.end) : '...';
   return (
     <>
       {courseRun.title && <h3>{StringHelper.capitalizeFirst(courseRun.title)}</h3>}
@@ -51,7 +51,7 @@ const OpenedSelfPacedCourseRun = ({
           <FormattedMessage
             {...messages.selfPaceRunPeriod}
             values={{
-              endDate: enrollmentEnd,
+              endDate: course_end,
             }}
           />
         </dd>
